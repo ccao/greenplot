@@ -14,17 +14,17 @@ MODULE hamk
     !
     USE constants,    ONLY : dp
     USE wanndata,     ONLY : norb, rvec, nrpt
-    USE input,        ONLY : isbulk
+    USE input,        ONLY : dir
     !
     implicit none
     !
     integer nl
     !
-    if (isbulk) then
+    if (dir.eq.0) then
       nbnd=norb
       allocate(ham00(nbnd, nbnd))
     else
-      nl=nint(maxval(rvec(3, :)))+1
+      nl=nint(maxval(rvec(dir, :)))+1
       nbnd=norb*nl
       allocate(ham01(nbnd, nbnd), ham00(nbnd, nbnd))
     endif
@@ -45,7 +45,7 @@ MODULE hamk
     !
     USE constants
     USE wanndata
-    USE input,        ONLY : isbulk
+    USE input,        ONLY : dir
     !
     implicit none
     !
@@ -59,7 +59,7 @@ MODULE hamk
     !
     ham00(:, :) = 0.d0
     !
-    if (isbulk) then
+    if (dir.eq.0) then
       !
       do ir=1, nrpt
         !
@@ -71,9 +71,9 @@ MODULE hamk
     else
       !
       ham01(:, :)=0.d0
-      kv(3)=0.d0
+      kv(dir)=0.d0
       !
-      nl=nint(maxval(rvec(3, :)))
+      nl=nint(maxval(rvec(dir, :)))
       nlayer=2*nl+1
       allocate(htmp(norb, norb, nlayer))
       !
@@ -81,7 +81,7 @@ MODULE hamk
       !
       do ir=1, nrpt
         !
-        il=nint(rvec(3, ir))+nl+1
+        il=nint(rvec(dir, ir))+nl+1
         coeff=exp(-cmplx_i*twopi*sum(kv(:)*rvec(:, ir)))/weight(ir)
         htmp(:, :, il) = htmp(:, :, il)+coeff*ham(:, :, ir)
         !

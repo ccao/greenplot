@@ -64,6 +64,8 @@ SUBROUTINE calc_surfgf(gf, ene, eta)
     CALL gemm(a0, ga, a1)
     CALL gemm(b0, gb, b1)
     !
+    if ((maxval(abs(a1)).le.eps6).and.(maxval(abs(b1)).le.eps6)) exit ! do iter
+    !
     a0(:,:)=a1(:,:)
     b0(:,:)=b1(:,:)
     !

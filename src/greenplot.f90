@@ -26,9 +26,16 @@ PROGRAM greenplot
   if (inode.eq.0) then
     !
     open(unit=fout, file='plot.dat')
+    !
     write(fout, '(2I10)') nk, ne
     write(fout, '(10F16.9)') xk(:)
     write(fout, '(10F16.9)') emesh(:)
+    !
+    if (dir.eq.0) then
+      write(stdout, '(A)') ' Bulk calculation...'
+    else
+      write(stdout, '(A,3I5,A)') ' Surface calculation of [', dirvec(:), ']'
+    endif
     !
   endif
   !
@@ -44,7 +51,7 @@ PROGRAM greenplot
     !
     do ie=first_ene, last_ene
       !
-      if (isbulk) then
+      if (dir.eq.0) then
         !
         CALL calc_bulkgf(gf, emesh(ie)+ef, eta)
         !
@@ -64,7 +71,13 @@ PROGRAM greenplot
     !
     CALL para_merge(dos, ne)
     !
-    write(fout, '(10F16.9)') dos
+    if (inode.eq.0) then
+      !
+      write(fout, '(10F16.9)') dos
+      !
+      write(stdout, '(A,1I5,A,1I5,A)') 'Kpt #', ik, 'out of', nk, 'Done'
+      !
+    endif
     !
   enddo ! ik
   !
@@ -74,6 +87,7 @@ PROGRAM greenplot
   !
   if (inode.eq.0) close(unit=fout)
   !
+  CALL finalize_hamk()
   CALL finalize_para()
   !
 END PROGRAM

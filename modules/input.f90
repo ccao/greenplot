@@ -1,5 +1,17 @@
 MODULE input
   !
+  ! Example:
+  !wannier90    ! seed
+  ! 8.26807433 -0.4  0.4  0.001   ! ef emin emax de
+  !     5.1781764    -1.8482837     0.0000000  ! a1
+  !     5.1781764     1.8482837     0.0000000  ! a2
+  !    -4.2580695     0.0000000     7.2229161  ! a3
+  ! 0 0 1    ! surface direction ( if all 0 then bulk )
+  ! 3  500   ! nkseg  nkperseg
+  ! G 0.00  0.00  0.00 M 0.50  0.00  0.00
+  ! M 0.50  0.00  0.00 X 0.50  0.50  0.00
+  ! X 0.50  0.50  0.00 G 0.00  0.00  0.00
+  !
   USE constants
   !
   implicit none
@@ -10,7 +22,8 @@ MODULE input
   !
   integer ne, nk
   !
-  logical isbulk
+  integer,dimension(3) :: dirvec
+  integer dir
   !
   character(len=80) :: seed
   !
@@ -30,6 +43,7 @@ MODULE input
   real(dp), dimension(3) :: t1, t2, tt
   real(dp) omega
   integer ii, jj
+  character(len=10) label1, label2
   !
   if (inode.eq.0) then
     !
@@ -79,22 +93,27 @@ MODULE input
   !
   if (inode.eq.0) then
     !
-    read(fin, *) ii
+    read(fin, *) dirvec
     read(fin, *) nseg, nkseg
     !
-    t1(1)=ii
-    t1(2)=nseg
-    t1(3)=nkseg
+    t2(:)=dirvec(:)
+    t1(1)=nseg
+    t1(2)=nkseg
     !
   endif
   !
   CALL para_sync(t1, 3)
+  CALL para_sync(t2, 3)
   !
-  ii=nint(t1(1))
-  nseg=nint(t1(2))
-  nkseg=nint(t1(3))
+  nseg=nint(t1(1))
+  nkseg=nint(t1(2))
+  dirvec(:)=nint(t2(:))
   !
-  if (ii.eq.3) isbulk=.true.
+  dir=0
+  !
+  do ii=1, 3
+    if (dirvec(ii).ne.0) dir=ii
+  enddo
   !
   nk=nseg*nkseg
   !
@@ -102,9 +121,11 @@ MODULE input
   !
   if (inode.eq.0) then
     !
+    open(unit=fout, file='klabels.dat')
+    !
     do ii=0, nseg-1
       !
-      read(fin, *) t1(:), t2(:)
+      read(fin, *) label1, t1(:), label2, t2(:)
       !
       do jj=1, 3
         tt(jj)=sum((t1(:)-t2(:))*bvec(:, jj))
@@ -128,8 +149,11 @@ MODULE input
         !
       enddo  ! jj
       !
+      write(fout, '(1F16.9,1X,A,1X,A)') xk(ii*nkseg+1), label1, label2
+      !
     enddo  ! ii
     !
+    close(unit=fout)
     close(unit=fin)
     !
   endif   ! inode.eq.0
