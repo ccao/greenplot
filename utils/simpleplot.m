@@ -1,4 +1,4 @@
-function simpleplot(fn)
+function simpleplot(fn, mode)
   % This function provides a simple command for plotting figure
   [xk, emesh, dos]=read_data(fn);
   
@@ -27,7 +27,11 @@ function simpleplot(fn)
   set(fig, 'PaperUnits', 'centimeters');
   set(fig, 'PaperPosition', [0 0 12 8]);
   set(fig, 'PaperPositionMode', 'Manual');
-  pcolor(xk, emesh, log(dos));
+  if (mode==0)
+    pcolor(xk, emesh, dos);
+  else
+    pcolor(xk, emesh, log(dos));
+  end
   colormap('copper');
   shading interp;
   hold on;
