@@ -19,7 +19,7 @@ nsite=sscanf(str, ' %d');
 xx=zeros(nsite,3);
 for ii=1:nsite
   str=fgetl(fid);
-  x(ii,:)=sscanf(str, '  WF centre and spread %*d ( %f, %f, %f ) %*f');
+  x(ii,:)=sscanf(str, ' %f %f %f ');
 end
 xx=x/ulat;
 fclose(fid);

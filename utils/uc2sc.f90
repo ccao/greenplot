@@ -52,7 +52,7 @@ PROGRAM uc2sc
   !
   CALL read_input()
   !
-  CALL read_ham()
+  CALL read_ham(seed)
   !
   nx=nint(maxval(1,:))
   ny=nint(maxval(2,:))

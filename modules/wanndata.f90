@@ -84,6 +84,12 @@ SUBROUTINE read_ham(seed)
   CALL para_sync(weight, nrpt)
   CALL para_sync(rvec, 3, nrpt)
   !
+  do irpt=1, nrpt
+    ham(:, :, irpt)=ham(:, :, irpt)/weight(irpt)
+  enddo
+  !
+  if (inode.eq.0) write(stdout, *) " # Real space Hamiltonian initialized."
+  !
 END SUBROUTINE
 
 SUBROUTINE finalize_wann()

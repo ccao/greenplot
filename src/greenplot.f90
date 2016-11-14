@@ -75,7 +75,7 @@ PROGRAM greenplot
       !
       write(fout, '(10F16.9)') dos
       !
-      write(stdout, '(A,1I5,A,1I5,A)') 'Kpt #', ik, 'out of', nk, 'Done'
+      write(stdout, '(A,1I5,A,1I5,A)') 'Kpt #', ik, ' out of', nk, ' Done'
       !
     endif
     !

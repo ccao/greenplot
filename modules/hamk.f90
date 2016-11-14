@@ -63,7 +63,7 @@ MODULE hamk
       !
       do ir=1, nrpt
         !
-        coeff=exp(-cmplx_i*twopi*sum(kv(:)*rvec(:, ir)))/weight(ir)
+        coeff=exp(-cmplx_i*twopi*sum(kv(:)*rvec(:, ir)))
         ham00(:, :)=ham00(:, :)+coeff*ham(:, :, ir)
         !
       enddo
@@ -82,7 +82,7 @@ MODULE hamk
       do ir=1, nrpt
         !
         il=nint(rvec(dir, ir))+nl+1
-        coeff=exp(-cmplx_i*twopi*sum(kv(:)*rvec(:, ir)))/weight(ir)
+        coeff=exp(-cmplx_i*twopi*sum(kv(:)*rvec(:, ir)))
         htmp(:, :, il) = htmp(:, :, il)+coeff*ham(:, :, ir)
         !
       enddo
