@@ -15,7 +15,9 @@ MODULE constants
   integer, parameter :: fout=11
   real(dp), parameter :: eps3=1.0d-3
   real(dp), parameter :: eps4=1.0d-4
+  real(dp), parameter :: eps5=1.0d-5
   real(dp), parameter :: eps6=1.0d-6
+  real(dp), parameter :: eps7=1.0d-7
   real(dp), parameter :: eps8=1.0d-8
   real(dp), parameter :: eps9=1.0d-9
   real(dp), parameter :: eps12=1.0d-12

@@ -13,6 +13,9 @@ CC=icc
 F90=mpiifort
 F90FLAGS=-D__MPI -D_INTEL
 
+#F90=ifort
+#F90FLAGS=-D_INTEL
+
 INCLUDES=$(MKLINCLUDE) -I../modules -I.
 
 MKLINCLUDE=-I$(MKLROOT)/include  -I$(MKLROOT)/include/intel64/lp64

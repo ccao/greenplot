@@ -6,25 +6,45 @@ MODULE input
   !     5.1781764    -1.8482837     0.0000000  ! a1
   !     5.1781764     1.8482837     0.0000000  ! a2
   !    -4.2580695     0.0000000     7.2229161  ! a3
-  ! 0 0 1    ! surface direction ( if all 0 then bulk )
-  ! 3  500   ! nkseg  nkperseg
+  ! 1  1     ! mode  dimension
+  ! 3  500   ! par1 par2
   ! G 0.00  0.00  0.00 M 0.50  0.00  0.00
   ! M 0.50  0.00  0.00 X 0.50  0.50  0.00
   ! X 0.50  0.50  0.00 G 0.00  0.00  0.00
+  !
+  ! Calculation modes:
+  !    0 : bulk calculation
+  !    1 : surface band calculation
+  ! dimension:
+  !    0 : single k-point calculation
+  !    1 : line mode
+  !      par1 is number of high symmetry line segs
+  !      par2 is number of k-points in each seg
+  !    2 : surface iso energy state
+  !      par1xpar2 is the k-mesh size
+  !
+  !     For surface calculations, assumes [001] direction
+  !      or more accurately, the surface is defined by
+  !      A1 x A2, transform Hamiltonian if necessary
   !
   USE constants
   !
   implicit none
   !
+  real(dp), dimension(3,3) :: alat, bvec
+  ! alat is the real-space lattice vector
+  ! bvec is the reciprocal-space lattice vector
   real(dp) :: eta, ef
+  ! eta is the infinitesmal imaginary part in Green's function
+  ! ef is the Fermi level
   real(dp), allocatable :: emesh(:), xk(:)
+  ! emesh is the energy mesh
+  ! xk is for simple plot
   real(dp), allocatable :: kvec(:, :)
-  !
-  integer ne, nk
-  !
-  integer,dimension(3) :: dirvec
-  integer dir
-  !
+  ! kvec(3, nk) are the actual k-points to be calculated
+  integer ne, nk, nkx, nky
+  integer mode, dmsn
+  ! Calculation modes and dimension
   character(len=80) :: seed
   !
  CONTAINS
@@ -36,9 +56,7 @@ MODULE input
   !
   implicit none
   !
-  real(dp), dimension(3, 3) :: alat, bvec
-  !
-  integer nseg, nkseg
+  integer par1, par2
   !
   real(dp), dimension(3) :: t1, t2, tt
   real(dp) omega
@@ -92,74 +110,86 @@ MODULE input
   bvec(:, :)=bvec(:, :)/omega
   !
   if (inode.eq.0) then
-    !
-    read(fin, *) dirvec
-    read(fin, *) nseg, nkseg
-    !
-    t2(:)=dirvec(:)
-    t1(1)=nseg
-    t1(2)=nkseg
+    read(fin, *) par1,par2   ! mode and dimension
+    t1(1)=par1
+    t1(2)=par2
+    read(fin, *) par1,par2
+    t2(1)=par1
+    t2(2)=par2
     !
   endif
   !
   CALL para_sync(t1, 3)
   CALL para_sync(t2, 3)
   !
-  nseg=nint(t1(1))
-  nkseg=nint(t1(2))
-  dirvec(:)=nint(t2(:))
+  mode=nint(t1(1))
+  dmsn=nint(t1(2))
+  nkx=nint(t2(1))
+  nky=nint(t2(2))
   !
-  dir=0
+  nk=nkx*nky
   !
-  do ii=1, 3
-    if (dirvec(ii).ne.0) dir=ii
-  enddo
-  !
-  nk=nseg*nkseg
-  !
-  allocate(kvec(nk, 3), xk(nk))
+  allocate(kvec(3, nk), xk(nk))
   !
   if (inode.eq.0) then
     !
-    open(unit=fout, file='klabels.dat')
-    !
-    do ii=0, nseg-1
+    if (dmsn.eq.0) then                             ! Single point calculation
       !
-      read(fin, *) label1, t1(:), label2, t2(:)
+      write(stdout, '(A,1I,A)') '  Single point calculation using ', ne, ' energies.'
+      read(fin, *) kvec(:,1)
       !
-      do jj=1, 3
-        tt(jj)=sum((t1(:)-t2(:))*bvec(:, jj))
+    elseif (dmsn.eq.1) then                         ! Line mode is default for bulk calculation
+      !
+      write(stdout, '(A)') '  Line mode calculation'
+      open(unit=fout, file='klabels.dat')           ! Create this file for easy plot.
+      !
+      do ii=0, par1-1
+        !
+        read(fin, *) label1, t1(:), label2, t2(:)   ! The labels of this segment
+        do jj=1, 3
+          tt(jj)=sum((t1(:)-t2(:))*bvec(:, jj))
+        enddo
+        omega=dsqrt(sum(tt(:)**2))                  ! Length of this segment
+        !
+        do jj=1, par2                               ! Interpolates the k-points in between
+          !
+          kvec(:, ii*par2+jj)=((jj-1)*t2(:)+(par2-jj)*t1(:))/(par2-1)
+          if (jj.eq.1) then                         !   as well as the xk position in plot
+            if (ii.eq.0) then
+              xk(ii*par2+jj)=0.d0
+            else
+              xk(ii*par2+jj)=xk(ii*par2+jj-1)
+            endif
+          else
+            xk(ii*par2+jj)=xk(ii*par2+jj-1)+omega/(par2-1)
+          endif
+          !
+        enddo  ! jj
+        !
+        write(fout, '(1F16.9,1X,A,1X,A)') xk(ii*par2+1), label1, label2
+        !
+      enddo  ! ii
+      !
+      close(unit=fout)
+      close(unit=fin)
+    elseif (dmsn.eq.2) then                         ! Surface mode
+      !  Create the 2d-mesh
+      write(stdout, '(A)') '  2D mode calculation'
+      write(stdout, '(A,I5,A,I5)') '   mesh size: ', nkx, 'x', nky
+      do ii=1,nkx
+        do jj=1,nky
+          !
+          kvec(:, (ii-1)*nky+jj)=(/ 1.d0*(ii-1)/nkx, 1.d0*(jj-1)/nky, 0.d0 /)
+          !
+        enddo
       enddo
       !
-      omega=dsqrt(sum(tt(:)**2))
-      !
-      do jj=1, nkseg
-        !
-        kvec(ii*nkseg+jj, :)=((jj-1)*t2(:)+(nkseg-jj)*t1(:))/(nkseg-1)
-        !
-        if (jj.eq.1) then
-          if (ii.eq.0) then
-            xk(ii*nkseg+jj)=0.d0
-          else
-            xk(ii*nkseg+jj)=xk(ii*nkseg+jj-1)
-          endif
-        else
-          xk(ii*nkseg+jj)=xk(ii*nkseg+jj-1)+omega/(nkseg-1)
-        endif
-        !
-      enddo  ! jj
-      !
-      write(fout, '(1F16.9,1X,A,1X,A)') xk(ii*nkseg+1), label1, label2
-      !
-    enddo  ! ii
-    !
-    close(unit=fout)
-    close(unit=fin)
+    endif
     !
   endif   ! inode.eq.0
   !
   CALL para_sync(xk, nk)
-  CALL para_sync(kvec, nk, 3)
+  CALL para_sync(kvec, 3, nk)
   !
  END SUBROUTINE
   !

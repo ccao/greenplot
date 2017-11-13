@@ -1,0 +1,30 @@
+#!/bin/bash
+#PBS -N CeSb_surf
+#PBS -l nodes=10:ppn=16
+#PBS -l walltime=24:30:00
+#PBS -q sugon1
+#PBS -j oe
+#PBS -o mpi.out
+#PBS -e mpi.err
+
+NP=`cat $PBS_NODEFILE|wc -l`
+
+NPROC=1
+
+## Openmpi-1.4.3 ##
+#
+export MKL_NUM_THREADS=$NPROC
+export OMP_NUM_THREADS=$NPROC
+export GOTO_NUM_THREADS=$NPROC
+
+exe=../src/greenplot.x
+
+MATLAB=/public/software/MATLAB/bin/matlab
+
+
+cd $PBS_O_WORKDIR
+
+mpirun -np ${NP} ${exe} > greenplot.log
+#${exe} > greenplot.log
+
+#${MATLAB} -nodisplay -r "expandwannhr" > log

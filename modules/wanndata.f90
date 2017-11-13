@@ -11,16 +11,16 @@ MODULE wanndata
   use constants
   !
   IMPLICIT NONE
-
+  !
   INTEGER norb
   INTEGER nrpt
-
-  COMPLEX(DP), ALLOCATABLE :: ham(:,:,:)
-
-  REAL(DP), ALLOCATABLE :: weight(:)
-
-  REAL(DP), ALLOCATABLE :: rvec(:,:)
   !
+  COMPLEX(DP), ALLOCATABLE :: ham(:,:,:)
+  ! Real space Hamiltonian, dimension is (norb, norb, nrpt)
+  REAL(DP), ALLOCATABLE :: rvec(:,:)
+  ! irreducible real space lattice vectors in lattice parameter unit
+  REAL(DP), ALLOCATABLE :: weight(:)
+  ! Weight of above vectors (the number of equivalent lattice vectors
 CONTAINS
 
 SUBROUTINE read_ham(seed)
@@ -84,9 +84,23 @@ SUBROUTINE read_ham(seed)
   CALL para_sync(weight, nrpt)
   CALL para_sync(rvec, 3, nrpt)
   !
+#if defined __DEBUG
+  !
+  open(unit=fout,file='debug.'//trim(inode))
   do irpt=1, nrpt
-    ham(:, :, irpt)=ham(:, :, irpt)/weight(irpt)
+    write(fout, '(4I10)') nint(rvec(:,irpt)),weight(irpt)
   enddo
+  do irpt=1, nrpt
+    if (sum(abs(rvec(:,irpt))).eq.0) then
+      do iorb=1, norb
+        do jorb=1, norb
+          write(fout, '(2I5,2F14.9)') iorb, jorb, ham(iorb, jorb, irpt)
+        enddo
+      enddo
+    endif
+  enddo
+  !
+#endif
   !
   if (inode.eq.0) write(stdout, *) " # Real space Hamiltonian initialized."
   !
