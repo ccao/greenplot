@@ -11,7 +11,7 @@ PROGRAM greenplot
   integer ik, ie, ii
   !
   complex(dp), allocatable :: gf(:, :)
-  real(dp), allocatable :: dos(:, :)
+  real(dp), allocatable :: dos(:, :), buf(:)
   !
   CALL init_para()
   !
@@ -31,11 +31,15 @@ PROGRAM greenplot
       write(stdout, '(A,3I5,A)') ' [001] Surface calculation '
     endif
     !
+    if (dmsn.eq.2) then
+      write(stdout, '(A)') '....x....1....x....2....x....3....x....4....x....5'
+    endif
+    !
   endif
   !
   allocate(dos(ne, nk))
   dos(:, :)=0.d0
-  !
+  ! 
   allocate(gf(nbnd, nbnd))
   !
   do ik=first_k, last_k
@@ -60,17 +64,36 @@ PROGRAM greenplot
       !
     enddo ! ie
     !
-    CALL para_merge(dos(:, ik), ne)
+    if (dmsn.lt.2) then
+      !
+      CALL para_merge(dos(:, ik), ne)
+      !
+    endif
     !
     if (inode.eq.0) then
       !
-      write(stdout, '(A,1I5,A,1I5,A)') 'Kpt #', ik, ' out of', nk, ' Done'
+      write(stdout, '(A,1F5.1,A)') '# ', (ik-first_k)*100.d0/(last_k-first_k), '% Done'
+      flush(stdout)
       !
     endif
     !
   enddo ! ik
   !
-  ! CALL para_merge(dos(ie, :), nk)
+  if (dmsn.gt.1) then
+    !
+    allocate(buf(nk))
+    !
+    do ii=first_ene, last_ene
+      !
+      buf(:)=dos(ii, 1:nk)
+      CALL para_merge(buf, nk)
+      dos(ii,:)=buf(:)
+      !
+    enddo
+    !
+    deallocate(buf)
+    !
+  endif
   !
   if (inode.eq.0) then
     ! output results...
