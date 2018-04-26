@@ -1,5 +1,9 @@
-function simpleplot(fn, mode)
+function simpleplot(fn, mode, tit)
   % This function provides a simple command for plotting figure
+  if nargin<3
+    tit='';
+  end
+  
   [xk, emesh, dos]=read_data(fn);
   
   fid=fopen('klabels.dat');
@@ -25,7 +29,7 @@ function simpleplot(fn, mode)
   
   fig=figure();
   set(fig, 'PaperUnits', 'centimeters');
-  set(fig, 'PaperPosition', [0 0 12 8]);
+  set(fig, 'PaperPosition', [0 0 8 6]);
   set(fig, 'PaperPositionMode', 'Manual');
   
 %  [xx, yy]=meshgrid(xk, emesh);
@@ -47,23 +51,30 @@ function simpleplot(fn, mode)
 %  end
 %  [xxf, yyf]=meshgrid(xkf, emeshf);
 %  dosf=interp2(xx, yy, dos, xxf, yyf, 'spline');
+  dosmax=max(max(dos));
+
   if (mode==0)
     pcolor(xk, emesh, dos);
   else
     pcolor(xk, emesh, log(abs(dos)));
   end
+  dy=round((max(emesh)-min(emesh))/5.0,1);
+  ymax=floor(max(emesh)/dy)*dy;
+  ymin=ceil(min(emesh)/dy)*dy;
+  
   r=linspace(1.0,0.0,256);
   g=linspace(1.0,0.0,256);
   b=linspace(1.0,1.0,256);
   ctmp=[r;g;b];
   cmap=transpose(ctmp);
   colormap(cmap);
-  caxis([0 100]);
+  caxis([0 dosmax/2]);
   shading interp;
   hold on;
+  title(tit);
   set(gca, 'FontName', 'Times');
   set(gca, 'FontSize', 10);
-  set(gca, 'Xtick', xtics, 'Ytick', [-4:2:2],'XTickLabel', xticlabels);
+  set(gca, 'Xtick', xtics, 'Ytick', [ymin:dy:ymax],'XTickLabel', xticlabels);
   plot([min(xk) max(xk)], [0 0], 'Color', [0.5,0.0,0.0]);
 %  plot([min(xk) max(xk)], [-0.2 -0.2], 'Color', [0.5,0.0,0.0], 'LineStyle', '--');
 %  plot([min(xk) max(xk)], [-0.24 -0.24], 'Color', [0.5,0.0,0.0], 'LineStyle', ':');
@@ -75,5 +86,5 @@ function simpleplot(fn, mode)
   ylabel('Energy (eV)');
 %  colorbar;
   hold off;
-  saveas(gcf, 'plot.png', 'png');
+  print(gcf, 'plot.png', '-dpng', '-r600');
 end
